@@ -14,6 +14,7 @@
   }
 
   const client = window.supabase.createClient(config.url, config.publishableKey);
+  const pendingActivationReason = 'Ожидает оплаты и активации администратором.';
   app.innerHTML = '<main class="judge-shell"><p>Загрузка рабочего пространства…</p></main>';
   app.dataset.ready = 'true';
   const judgeTokenStorageKey = `jury-vote-issued-links:${config.url}`;
@@ -56,6 +57,8 @@
     catch { showMessage('Скопируйте ссылку сейчас: браузер не разрешил временное хранение.'); }
   };
   const isJudgeRoute = () => new URLSearchParams(location.hash.slice(1)).has('judge');
+  const isPasswordRecoveryRoute = () => new URLSearchParams(location.hash.slice(1)).get('type') === 'recovery';
+  const authRedirectUrl = () => new URL('./', location.href).toString();
   const isPlatformAdminRoute = () => location.pathname.replace(/\/$/, '').endsWith('/admin') || new URLSearchParams(location.hash.slice(1)).has('admin') || new URLSearchParams(location.search).has('admin');
   const judgeToken = () => new URLSearchParams(location.hash.slice(1)).get('judge');
   const makeToken = () => [...crypto.getRandomValues(new Uint8Array(32))].map((byte) => byte.toString(16).padStart(2, '0')).join('');
@@ -71,13 +74,53 @@
 
   function authView(message = '') {
     cloud.mode = 'auth';
-    app.innerHTML = `<main class="judge-shell"><header class="judge-top"><div class="judge-logo"><span class="brand-mark">Ж</span><span>Голосование жюри</span></div><small>ОБЛАЧНАЯ ВЕРСИЯ</small></header><section class="judge-heading"><p class="eyebrow">Рабочее пространство</p><h1>Вход организатора</h1><p>Войдите или создайте аккаунт, чтобы управлять конкурсами.</p></section><section class="panel" style="max-width:480px"><div class="panel-body"><form id="cloud-auth-form" class="form-grid"><div class="field full"><label for="cloud-email">Электронная почта</label><input id="cloud-email" name="email" type="email" autocomplete="email" required></div><div class="field full"><label for="cloud-password">Пароль</label><input id="cloud-password" name="password" type="password" autocomplete="current-password" minlength="8" required></div><div class="field full"><p class="form-hint" id="cloud-auth-message">${escapeHtml(message)}</p></div><div class="field full" style="display:flex;gap:8px;flex-wrap:wrap"><button class="button" type="submit" data-auth-mode="sign-in">Войти</button><button class="button secondary" type="submit" data-auth-mode="sign-up">Создать аккаунт</button></div></form></div></section></main>`;
+    app.innerHTML = `<main class="judge-shell"><header class="judge-top"><div class="judge-logo"><span class="brand-mark">Ж</span><span>Голосование жюри</span></div><small>ОБЛАЧНАЯ ВЕРСИЯ</small></header><section class="judge-heading"><p class="eyebrow">Рабочее пространство</p><h1>Вход организатора</h1><p>Войдите или создайте аккаунт, чтобы управлять конкурсами.</p></section><section class="panel" style="max-width:480px"><div class="panel-body"><form id="cloud-auth-form" class="form-grid"><div class="field full"><label for="cloud-email">Электронная почта</label><input id="cloud-email" name="email" type="email" autocomplete="email" required></div><div class="field full"><label for="cloud-password">Пароль</label><input id="cloud-password" name="password" type="password" autocomplete="current-password" minlength="8" required></div><div class="field full"><p class="form-hint" id="cloud-auth-message">${escapeHtml(message)}</p></div><div class="field full" style="display:flex;gap:8px;flex-wrap:wrap"><button class="button" type="submit" data-auth-mode="sign-in">Войти</button><button class="button secondary" type="submit" data-auth-mode="sign-up">Создать аккаунт</button></div><div class="field full"><button class="auth-link" type="button" data-auth-action="forgot-password">Забыли пароль?</button></div><div class="field full" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line)"><p class="form-hint">Нужна помощь? Свяжитесь с поддержкой:<br><a href="mailto:support@example.com" style="color:var(--green)">support@example.com</a></p></div></form></div></section></main>`;
+  }
+
+  function passwordUpdateView(message = '') {
+    cloud.mode = 'password-update';
+    app.innerHTML = `<main class="judge-shell"><header class="judge-top"><div class="judge-logo"><span class="brand-mark">Ж</span><span>Голосование жюри</span></div></header><section class="judge-heading"><p class="eyebrow">Восстановление доступа</p><h1>Задайте новый пароль</h1><p>После сохранения войдите с новым паролем. Если аккаунт ещё не активирован, сначала потребуется разрешение администратора.</p></section><section class="panel" style="max-width:480px"><div class="panel-body"><form id="password-update-form" class="form-grid"><div class="field full"><label for="new-password">Новый пароль</label><input id="new-password" name="password" type="password" autocomplete="new-password" minlength="8" required></div><div class="field full"><label for="repeat-password">Повторите пароль</label><input id="repeat-password" name="password_confirmation" type="password" autocomplete="new-password" minlength="8" required></div><div class="field full"><p class="form-hint" id="password-update-message" role="status">${escapeHtml(message)}</p></div><div class="field full"><button class="button" type="submit">Сохранить новый пароль</button></div></form></div></section></main>`;
+  }
+
+  async function requestPasswordReset(button) {
+    const form = document.querySelector('#cloud-auth-form');
+    const emailInput = form?.elements.email;
+    const message = form?.querySelector('#cloud-auth-message');
+    const email = emailInput?.value.trim();
+    if (!email) { message.textContent = 'Сначала введите адрес электронной почты.'; emailInput?.focus(); return; }
+    button.disabled = true;
+    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: authRedirectUrl() });
+    button.disabled = false;
+    message.textContent = error
+      ? 'Не удалось отправить письмо. Проверьте адрес и попробуйте ещё раз.'
+      : 'Если аккаунт зарегистрирован, на эту почту отправлено письмо со ссылкой для смены пароля. Проверьте папку «Спам».';
+  }
+
+  async function handlePasswordUpdate(event) {
+    event.preventDefault();
+    const form = event.target;
+    const values = new FormData(form);
+    const password = values.get('password');
+    const confirmation = values.get('password_confirmation');
+    const message = form.querySelector('#password-update-message');
+    const button = form.querySelector('[type="submit"]');
+    if (password !== confirmation) { message.textContent = 'Пароли не совпадают.'; return; }
+    if (password.length < 8) { message.textContent = 'Пароль должен содержать не менее 8 символов.'; return; }
+    button.disabled = true;
+    const { error } = await client.auth.updateUser({ password });
+    button.disabled = false;
+    if (error) { message.textContent = 'Не удалось изменить пароль. Возможно, ссылка устарела — запросите новую.'; return; }
+    await client.auth.signOut();
+    cloud.user = null;
+    history.replaceState(null, '', `${location.pathname}${location.search}`);
+    authView('Пароль изменён. Войдите с новым паролем. Если доступ ещё не выдан, аккаунт будет ждать активации администратором.');
   }
 
   function blockedView(access = {}) {
     cloud.mode = 'blocked';
     const reason = access.reason?.trim();
-    app.innerHTML = `<main class="judge-shell"><header class="judge-top"><div class="judge-logo"><span class="brand-mark">Ж</span><span>Голосование жюри</span></div><button class="button secondary small" type="button" data-cloud-action="sign-out">Выйти</button></header><section class="judge-heading"><p class="eyebrow">Доступ к рабочему пространству</p><h1>Аккаунт заблокирован</h1><p>Вход выполнен, но доступ к организациям и конкурсам отключён администратором платформы.</p></section><section class="panel" style="max-width:640px"><div class="panel-body"><dl class="account-block-details"><dt>Когда</dt><dd>${escapeHtml(formatDateTime(access.updated_at))}</dd><dt>Причина</dt><dd>${reason ? escapeHtml(reason) : 'Администратор не указал причину.'}</dd></dl><p class="form-hint">Ваши данные и конкурсы сохранены. Обратитесь к человеку, который предоставил вам доступ к системе, и попросите уточнить блокировку. После восстановления доступа обновите страницу или войдите снова.</p></div></section></main>`;
+    const waitingActivation = reason === pendingActivationReason;
+    app.innerHTML = `<main class="judge-shell"><header class="judge-top"><div class="judge-logo"><span class="brand-mark">Ж</span><span>Голосование жюри</span></div><button class="button secondary small" type="button" data-cloud-action="sign-out">Выйти</button></header><section class="judge-heading"><p class="eyebrow">Доступ к рабочему пространству</p><h1>${waitingActivation ? 'Регистрация ожидает активации' : 'Аккаунт заблокирован'}</h1><p>${waitingActivation ? 'После подтверждения оплаты администратор вручную откроет доступ к организациям и конкурсам.' : 'Вход выполнен, но доступ к организациям и конкурсам отключён администратором платформы.'}</p></section><section class="panel" style="max-width:640px"><div class="panel-body"><dl class="account-block-details"><dt>Когда</dt><dd>${escapeHtml(formatDateTime(access.updated_at))}</dd><dt>Причина</dt><dd>${reason ? escapeHtml(reason) : 'Администратор не указал причину.'}</dd></dl><p class="form-hint">${waitingActivation ? 'Если оплата уже внесена, обратитесь к организатору, которому отправляли её.' : 'Ваши данные и конкурсы сохранены. Обратитесь к человеку, который предоставил вам доступ к системе, и попросите уточнить блокировку.'} После активации обновите страницу или войдите снова.</p></div></section></main>`;
   }
 
   async function checkAccountAccess() {
@@ -714,16 +757,28 @@
       return;
     }
     if (!confirm('Отправить бюллетень? После отправки изменить оценки нельзя.')) return;
+    const submitButton = event.target.querySelector('button[type="submit"]');
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Сохраняем…';
+    }
+    showMessage('Сохраняем оценки…');
     const scores = state.participants.flatMap((person) => state.categories.map((category) => ({
       participant_id: person.id,
       category_id: category.id,
       score: ballot[person.id][category.id],
     })));
     const { error } = await client.rpc('submit_judge_ballot', { p_token: token, p_scores: scores });
-    if (handleError(error, 'Не удалось отправить бюллетень')) return;
+    if (submitButton) submitButton.disabled = false;
+    if (error) {
+      if (submitButton) submitButton.textContent = 'Отправить бюллетень';
+      showMessage('❌ Не удалось сохранить. Проверьте интернет и повторите.');
+      console.error(error);
+      return;
+    }
     ballot.submitted = true;
     window.ContestApp.renderJudge(token);
-    showMessage('Бюллетень отправлен');
+    showMessage('✓ Сохранено');
   }, true);
 
   document.addEventListener('submit', (event) => {

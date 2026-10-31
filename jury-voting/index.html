@@ -125,7 +125,7 @@
       const ranked = getTotals();
       const maxTotal = Math.max(...ranked.map(item => item.total), 1);
       const categoryOptions = state.categories.map(category => `<option value="${esc(category.id)}">${esc(category.name)}</option>`).join('');
-      return `<section class="page-head"><div><p class="eyebrow">Сводка конкурса</p><h1>${esc(state.title)}</h1><p>Баллы суммируются по всем судьям и категориям.</p></div><button class="button" type="button" data-action="edit-contest">⚙ Настройки конкурса</button></section><section class="stats" aria-label="Сводка"><div class="stat"><div class="stat-label">Участницы</div><div class="stat-value">${state.participants.length}</div><div class="stat-note">в текущем конкурсе</div></div><div class="stat"><div class="stat-label">Категории</div><div class="stat-value">${state.categories.length}</div><div class="stat-note">от ${state.minScore} до ${state.maxScore} баллов</div></div><div class="stat"><div class="stat-label">Проголосовали</div><div class="stat-value green">${completed}<span style="font-size:14px;color:var(--muted);font-weight:500"> / ${state.judges.length}</span></div><div class="stat-note">судейских бюллетеней</div></div><div class="stat"><div class="stat-label">Оценок получено</div><div class="stat-value">${totalVotes.toLocaleString('ru')}</div><div class="stat-note">из ${(state.judges.length * state.participants.length * state.categories.length).toLocaleString('ru')}</div></div></section><div class="toolbar"><h2>Текущий рейтинг</h2><div class="toolbar-tools"><select class="select" id="category-filter" aria-label="Фильтр по категории"><option value="all">Все категории · общий балл</option>${categoryOptions}</select><button class="button secondary small" type="button" data-action="export">↓ CSV</button></div></div><div class="table-wrap"><table><thead><tr><th>МЕСТО</th><th>УЧАСТНИЦА</th>${state.categories.map(category => `<th>${esc(category.name).toLocaleUpperCase('ru')}</th>`).join('')}<th>ИТОГО</th></tr></thead><tbody id="ranking-body">${ranked.length ? ranked.map((item, index) => `<tr><td class="rank ${index < 3 ? 'top' : ''}">${String(index + 1).padStart(2, '0')}</td><td><div class="person-cell"><span class="person-index">${String(index + 1).padStart(2, '0')}</span><div><div class="person-name">${esc(fullName(item.person))}</div><div class="person-age">${item.person.age} лет</div></div></div></td>${item.categories.map(score => `<td class="score-cell">${score || '—'}</td>`).join('')}<td class="total-cell">${item.total}<div class="bar"><i style="width:${Math.round(item.total / maxTotal * 100)}%"></i></div></td></tr>`).join('') : `<tr><td colspan="${state.categories.length + 3}" class="empty">Добавьте участниц, чтобы сформировать рейтинг.</td></tr>`}</tbody></table></div>`;
+      return `<section class="page-head"><div><p class="eyebrow">Сводка конкурса</p><h1>${esc(state.title)}</h1><p>Баллы суммируются по всем судьям и категориям.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="button" type="button" data-action="edit-contest">⚙ Настройки конкурса</button><button class="button secondary" type="button" data-action="backup">💾 Резервная копия</button></div></section><section class="stats" aria-label="Сводка"><div class="stat"><div class="stat-label">Участницы</div><div class="stat-value">${state.participants.length}</div><div class="stat-note">в текущем конкурсе</div></div><div class="stat"><div class="stat-label">Категории</div><div class="stat-value">${state.categories.length}</div><div class="stat-note">от ${state.minScore} до ${state.maxScore} баллов</div></div><div class="stat"><div class="stat-label">Проголосовали</div><div class="stat-value green">${completed}<span style="font-size:14px;color:var(--muted);font-weight:500"> / ${state.judges.length}</span></div><div class="stat-note">судейских бюллетеней</div></div><div class="stat"><div class="stat-label">Оценок получено</div><div class="stat-value">${totalVotes.toLocaleString('ru')}</div><div class="stat-note">из ${(state.judges.length * state.participants.length * state.categories.length).toLocaleString('ru')}</div></div></section><div class="toolbar"><h2>Текущий рейтинг</h2><div class="toolbar-tools"><select class="select" id="category-filter" aria-label="Фильтр по категории"><option value="all">Все категории · общий балл</option>${categoryOptions}</select><button class="button secondary small" type="button" data-action="export">↓ Рейтинг CSV</button><button class="button secondary small" type="button" data-action="export-judges">↓ Оценки судей CSV</button></div></div><div class="table-wrap"><table><thead><tr><th>МЕСТО</th><th>УЧАСТНИЦА</th>${state.categories.map(category => `<th>${esc(category.name).toLocaleUpperCase('ru')}</th>`).join('')}<th>ИТОГО</th></tr></thead><tbody id="ranking-body">${ranked.length ? ranked.map((item, index) => `<tr><td class="rank ${index < 3 ? 'top' : ''}">${String(index + 1).padStart(2, '0')}</td><td><div class="person-cell"><span class="person-index">${String(index + 1).padStart(2, '0')}</span><div><div class="person-name">${esc(fullName(item.person))}</div><div class="person-age">${item.person.age} лет</div></div></div></td>${item.categories.map(score => `<td class="score-cell">${score || '—'}</td>`).join('')}<td class="total-cell">${item.total}<div class="bar"><i style="width:${Math.round(item.total / maxTotal * 100)}%"></i></div></td></tr>`).join('') : `<tr><td colspan="${state.categories.length + 3}" class="empty">Добавьте участниц, чтобы сформировать рейтинг.</td></tr>`}</tbody></table></div>`;
     }
     function renderPeople() {
       return `<section class="page-head"><div><p class="eyebrow">Список конкурса</p><h1>Участницы</h1><p>Зажмите значок слева и перетащите строку. Также можно нажать Alt+↑/↓.</p></div><button class="button" type="button" data-action="add-person">＋ Добавить участницу</button></section><section class="panel"><div class="panel-head"><h2>Участницы конкурса</h2><span class="badge">${state.participants.length} всего</span></div><div class="panel-body list" data-sort-list="participants">${state.participants.length ? state.participants.map((person, index) => `<div class="list-row" data-sort-item data-sort-id="${esc(person.id)}"><button class="drag-handle" type="button" aria-label="Перетащить участницу ${esc(fullName(person))}" title="Зажмите и перетащите">⠿</button><div class="person-cell"><span class="person-index">${String(index + 1).padStart(2, '0')}</span><div><div class="list-title">${esc(fullName(person))}</div><div class="list-sub">Участница ${index + 1} · ${person.age} лет</div></div></div><div class="row-actions"><button class="button secondary small" type="button" data-action="edit-person" data-id="${esc(person.id)}">Изменить</button><button class="button danger small" type="button" data-action="delete-person" data-id="${esc(person.id)}" aria-label="Удалить ${esc(fullName(person))}">×</button></div></div>`).join('') : `<div class="empty">Пока нет участниц. Добавьте первую запись.</div>`}</div></section>`;
@@ -202,6 +202,53 @@
       const csv = '\ufeff' + rows.map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(';')).join('\r\n');
       const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); link.download = 'rezultaty-konkursa.csv'; link.click(); URL.revokeObjectURL(link.href);
     }
+    function exportJudgeScores() {
+      const rows = [['Судья', 'Участница', 'Фамилия', 'Имя', 'Возраст', ...state.categories.map(item => item.name), 'Сумма баллов']];
+      state.judges.forEach(judge => {
+        const ballot = state.votes[judge.id];
+        if (!ballot || !ballot.submitted) return;
+        state.participants.forEach(person => {
+          const scores = state.categories.map(category => ballot[person.id]?.[category.id] || 0);
+          const total = scores.reduce((sum, score) => sum + score, 0);
+          rows.push([judge.name, `${person.surname} ${person.name}`, person.surname, person.name, person.age, ...scores, total]);
+        });
+      });
+      const csv = '﻿' + rows.map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(';')).join('\r\n');
+      const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); link.download = 'ocenki-sudej.csv'; link.click(); URL.revokeObjectURL(link.href);
+    }
+    function exportFullBackup() {
+      const backup = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        contest: {
+          title: state.title,
+          minScore: state.minScore,
+          maxScore: state.maxScore,
+          isActive: state.isActive
+        },
+        participants: state.participants,
+        categories: state.categories,
+        judges: state.judges.map(j => ({ id: j.id, name: j.name, token: j.token })),
+        votes: Object.entries(state.votes).map(([judgeId, ballot]) => ({
+          judgeId,
+          submitted: ballot.submitted,
+          scores: Object.entries(ballot).filter(([k]) => k !== 'submitted').map(([personId, categories]) =>
+            Object.entries(categories).map(([categoryId, score]) => ({
+              personId,
+              categoryId,
+              score
+            }))
+          ).flat()
+        }))
+      };
+      const json = JSON.stringify(backup, null, 2);
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+      link.download = `backup-${state.title.replace(/[^a-zа-я0-9]/gi, '-')}-${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      showToast('Резервная копия сохранена');
+    }
     app.addEventListener('click', async event => {
       const missingScoreButton = event.target.closest('[data-missing-target]');
       if (missingScoreButton) {
@@ -260,6 +307,8 @@
       if (action === 'delete-judge') { const judge = state.judges.find(item => item.id === id); if (confirm(`Удалить ${judge.name} и его бюллетень?`)) { state.judges = state.judges.filter(item => item.id !== id); delete state.votes[id]; persist(); render(); } }
       if (action === 'copy-link') { try { await navigator.clipboard.writeText(makeJudgeUrl(id)); showToast('Ссылка скопирована'); } catch { showToast('Скопируйте ссылку из списка'); } }
       if (action === 'export') exportCsv();
+      if (action === 'export-judges') exportJudgeScores();
+      if (action === 'backup') exportFullBackup();
       if (action === 'edit-organization') {
         if (!window.ContestCloud?.renameOrganization) return;
         openDialog('Переименовать организатора', `<div class="form-grid">${inputField('organizationName', 'Название организатора', actionButton.dataset.currentName || '')}</div>`, 'Сохранить', async data => {
