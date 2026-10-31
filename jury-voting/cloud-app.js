@@ -157,6 +157,16 @@
       await loadJudge(judgeToken());
       return;
     }
+    if (isPasswordRecoveryRoute()) {
+      const { data: { session }, error } = await client.auth.getSession();
+      if (error || !session) {
+        authView('Ссылка восстановления недействительна или устарела. Запросите новую.');
+        return;
+      }
+      cloud.user = session.user;
+      passwordUpdateView();
+      return;
+    }
     const { data: { session }, error } = await client.auth.getSession();
     if (error) { authView('Не удалось проверить сессию. Обновите страницу.'); return; }
     cloud.user = session?.user || null;
@@ -785,6 +795,15 @@
     if (event.target.id === 'cloud-auth-form') handleAuth(event);
     if (event.target.id === 'organization-form') handleOrganization(event);
     if (event.target.id === 'new-competition-form') handleCompetition(event);
+    if (event.target.id === 'password-update-form') handlePasswordUpdate(event);
+  }, true);
+
+  document.addEventListener('click', (event) => {
+    const forgotPasswordButton = event.target.closest('[data-auth-action="forgot-password"]');
+    if (forgotPasswordButton) {
+      event.preventDefault();
+      requestPasswordReset(forgotPasswordButton);
+    }
   }, true);
 
   window.addEventListener('hashchange', () => {
