@@ -216,7 +216,6 @@ tbody tr:hover { background: #17211a; }
 .dialog-head { border-color: var(--line); }
 .dialog-head h2 { color: #f2f6f0; font-size: 18px; }
 .dialog-form { padding: 21px; }
-.dialog-form input, .dialog-form select { color: #0d1411; }
 .dialog-close { border-color: #344238; border-radius: 8px; background: #1a241d; color: #dde7dc; }
 .contest-warning { border-radius: 10px; background: #2b1d19; color: #f1aa96; }
 .contest-confirm { color: #e1e9e0; }
