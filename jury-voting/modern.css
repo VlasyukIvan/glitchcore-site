@@ -44,7 +44,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   height: 40px;
   border-radius: 12px;
   background: var(--green);
-  color: #102012;
+  color: #0d1411;
   font-size: 18px;
 }
 .brand-name { color: #f5f8f3; font-size: 13px; letter-spacing: .01em; }
@@ -184,7 +184,7 @@ tbody tr:hover { background: #17211a; }
   border: 1px solid var(--green);
   border-radius: 10px;
   background: var(--green);
-  color: #142011;
+  color: #0d1411;
   font-size: 12px;
   font-weight: 800;
   transition: transform .15s ease, background-color .15s ease, border-color .15s ease;
@@ -216,6 +216,7 @@ tbody tr:hover { background: #17211a; }
 .dialog-head { border-color: var(--line); }
 .dialog-head h2 { color: #f2f6f0; font-size: 18px; }
 .dialog-form { padding: 21px; }
+.dialog-form input, .dialog-form select { color: #0d1411; }
 .dialog-close { border-color: #344238; border-radius: 8px; background: #1a241d; color: #dde7dc; }
 .contest-warning { border-radius: 10px; background: #2b1d19; color: #f1aa96; }
 .contest-confirm { color: #e1e9e0; }
@@ -238,7 +239,7 @@ tbody tr:hover { background: #17211a; }
 .ballot-category label, .judge-footer span { color: #c2cec3; }
 .rating button { border-color: #344238; border-radius: 9px; background: #17211a; color: #dce6dc; }
 .rating button:hover { border-color: var(--green); background: #1e2d21; }
-.rating button[aria-pressed=true] { border-color: var(--green); background: var(--green); color: #142011; }
+.rating button[aria-pressed=true] { border-color: var(--green); background: var(--green); color: #0d1411; }
 .judge-footer { border-top: 1px solid var(--line); background: #0b100eeF; }
 .not-found h1 { color: #f3f7f1; }
 .not-found p { color: var(--muted); }
