@@ -151,7 +151,8 @@
       for (const person of state.participants) for (const category of state.categories) if (ballot[person.id]?.[category.id] !== undefined) filled++;
       const missingByPerson = state.participants.map(person => ({ person, categories: state.categories.filter(category => ballot[person.id]?.[category.id] === undefined) })).filter(item => item.categories.length);
       const missingCount = missingByPerson.reduce((sum, item) => sum + item.categories.length, 0);
-      const missingSummary = missingCount ? `<section class="missing-scores" role="status"><div class="missing-heading"><strong>Не хватает оценок: ${missingCount}</strong><span>Нажмите на номинацию, чтобы перейти к пропуску.</span></div><ul>${missingByPerson.map(({ person, categories }) => `<li><b>${esc(fullName(person))}</b><div class="missing-score-links">${categories.map(category => `<button class="missing-score-link" type="button" data-missing-target="rating-${esc(person.id)}-${esc(category.id)}" aria-label="${esc(fullName(person))}, номинация ${esc(category.name)}: перейти к оценке">${esc(category.name)}</button>`).join('')}</div></li>`).join('')}</ul></section>` : '';
+      const showMissing = state.showMissingScores || false;
+      const missingSummary = (missingCount && showMissing) ? `<section class="missing-scores" role="status"><div class="missing-heading"><strong>Не хватает оценок: ${missingCount}</strong><span>Нажмите на номинацию, чтобы перейти к пропуску.</span></div><ul>${missingByPerson.map(({ person, categories }) => `<li><b>${esc(fullName(person))}</b><div class="missing-score-links">${categories.map(category => `<button class="missing-score-link" type="button" data-missing-target="rating-${esc(person.id)}-${esc(category.id)}" aria-label="${esc(fullName(person))}, номинация ${esc(category.name)}: перейти к оценке">${esc(category.name)}</button>`).join('')}</div></li>`).join('')}</ul></section>` : '';
       if (!state.isActive && !submitted) {
         app.innerHTML = `<main class="judge-shell"><header class="judge-top"><div class="judge-logo"><span class="brand-mark">Ж</span><span>Голосование жюри</span></div><small>СУДЬЯ: ${esc(judge.name.toLocaleUpperCase('ru'))}</small></header><section class="judge-heading"><p class="eyebrow">Бюллетень судьи</p><h1>${esc(state.title)}</h1></section><section class="paused-vote"><h2>Голосование приостановлено</h2><p>Организатор остановил приём голосов. Ранее отмеченные оценки сохранены; продолжить голосование можно будет после возобновления конкурса.</p></section></main>`;
         return;
@@ -265,6 +266,7 @@
         if (!judge || state.votes[judge.id]?.submitted) return;
         state.votes[judge.id] ||= {}; state.votes[judge.id][scoreButton.dataset.person] ||= {};
         state.votes[judge.id][scoreButton.dataset.person][scoreButton.dataset.category] = Number(scoreButton.dataset.score);
+        state.showMissingScores = false;
         const scrollY = window.scrollY;
         persist(); renderJudge(token); window.scrollTo(0, scrollY); return;
       }
@@ -413,6 +415,7 @@
         const ballot = state.votes[judge.id] || {};
         const complete = state.participants.every(person => state.categories.every(category => ballot[person.id]?.[category.id] !== undefined));
         if (!complete) {
+          state.showMissingScores = true;
           renderJudge(judgeToken());
           document.querySelector('.missing-scores')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           document.querySelector('.missing-score-link')?.focus({ preventScroll: true });
