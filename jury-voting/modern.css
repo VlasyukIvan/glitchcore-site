@@ -134,7 +134,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   border: 1px solid #344238;
   border-radius: 10px;
   background-color: #121a15;
-  color: #eff4ed !important;
+  color: #eff4ed;
 }
 .select { padding: 0 34px 0 12px; font-size: 12px; }
 input { padding: 0 12px; }
@@ -216,6 +216,12 @@ tbody tr:hover { background: #17211a; }
 .dialog-head { border-color: var(--line); }
 .dialog-head h2 { color: #f2f6f0; font-size: 18px; }
 .dialog-form { padding: 21px; }
+.dialog-form input, .dialog-form select {
+  background-color: #f0f4ee !important;
+  color: #0d1411 !important;
+  border-color: #9aa79d !important;
+}
+.dialog-form input::placeholder { color: #6b7870 !important; }
 .dialog-close { border-color: #344238; border-radius: 8px; background: #1a241d; color: #dde7dc; }
 .contest-warning { border-radius: 10px; background: #2b1d19; color: #f1aa96; }
 .contest-confirm { color: #e1e9e0; }
