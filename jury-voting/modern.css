@@ -242,9 +242,9 @@ tbody tr:hover { background: #17211a; }
 .ballot-card { border-color: var(--line); border-radius: 14px; background: #111815; }
 .ballot-person { border-color: var(--line); }
 .ballot-category label, .judge-footer span { color: #c2cec3; }
-.rating button { border-color: #344238; border-radius: 9px; background: #17211a; color: #dce6dc; }
-.rating button:hover { border-color: var(--green); background: #1e2d21; }
-.rating button[aria-pressed=true] { border-color: var(--green); background: var(--green); color: #0d1411; }
+.rating button { border-color: #344238; border-radius: 9px; background: #17211a; color: #000000; }
+.rating button:hover { border-color: var(--green); background: #1e2d21; color: #000; }
+.rating button[aria-pressed=true] { border-color: var(--green); background: var(--green); color: #000000; }
 .judge-footer { border-top: 1px solid var(--line); background: #0b100eeF; }
 .not-found h1 { color: #f3f7f1; }
 .not-found p { color: var(--muted); }
