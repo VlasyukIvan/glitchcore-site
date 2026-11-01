@@ -205,8 +205,20 @@ tbody tr:hover { background: #17211a; }
 .contest-controls .button:not(.secondary):not(.danger) { background: var(--green); }
 
 .form-grid { gap: 15px; }
-.field { color: #000000; }
-.field label { color: #000000; font-size: 12px; }
+.field { color: #d5dfd5; }
+.field label { color: #cbd7cc; font-size: 12px; }
+.form-hint { color: #aebbb0; }
+.auth-link {
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: #c8f88a;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.auth-link:hover { color: #e3ffc0; }
 .dialog {
   border: 1px solid #36463a;
   border-radius: 18px;
