@@ -58,7 +58,7 @@
   };
   const isJudgeRoute = () => new URLSearchParams(location.hash.slice(1)).has('judge');
   const isPasswordRecoveryRoute = () => new URLSearchParams(location.hash.slice(1)).get('type') === 'recovery';
-  const authRedirectUrl = () => new URL('./', location.href).toString();
+  const authRedirectUrl = () => 'https://glitchcore9.github.io/glitchcore/jury-voting/';
   const isPlatformAdminRoute = () => location.pathname.replace(/\/$/, '').endsWith('/admin') || new URLSearchParams(location.hash.slice(1)).has('admin') || new URLSearchParams(location.search).has('admin');
   const judgeToken = () => new URLSearchParams(location.hash.slice(1)).get('judge');
   const makeToken = () => [...crypto.getRandomValues(new Uint8Array(32))].map((byte) => byte.toString(16).padStart(2, '0')).join('');
@@ -627,7 +627,7 @@
     button.disabled = true;
     const result = mode === 'sign-in'
       ? await client.auth.signInWithPassword({ email, password })
-      : await client.auth.signUp({ email, password });
+      : await client.auth.signUp({ email, password, options: { emailRedirectTo: authRedirectUrl() } });
     button.disabled = false;
     if (result.error) { message.textContent = result.error.message; return; }
     if (mode === 'sign-up' && !result.data.session) {
