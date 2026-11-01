@@ -93,6 +93,43 @@
     dialog.showModal();
   }
 
+  function showChangePasswordDialog() {
+    const dialog = document.querySelector('#dialog');
+    const form = document.querySelector('#dialog-form');
+    document.querySelector('#dialog-title').textContent = 'Сменить пароль';
+    form.innerHTML = `<div class="form-grid"><div class="field full"><label for="current-account-password">Текущий пароль</label><input id="current-account-password" name="current_password" type="password" autocomplete="current-password" required></div><div class="field full"><label for="new-account-password">Новый пароль, от 8 символов</label><input id="new-account-password" name="password" type="password" minlength="8" autocomplete="new-password" required></div><div class="field full"><label for="confirm-account-password">Повторите новый пароль</label><input id="confirm-account-password" name="password_confirmation" type="password" minlength="8" autocomplete="new-password" required></div><div class="field full"><p class="form-hint">Текущий пароль проверяется, но не сохраняется и не показывается администратору.</p></div></div><div class="dialog-actions"><button class="button secondary" type="button" data-close>Отмена</button><button class="button" type="submit">Сменить пароль</button></div>`;
+    form.onsubmit = async (event) => {
+      event.preventDefault();
+      const values = new FormData(form);
+      const currentPassword = values.get('current_password');
+      const password = values.get('password');
+      const confirmation = values.get('password_confirmation');
+      if (password.length < 8) { showMessage('Новый пароль должен содержать не менее 8 символов.'); return; }
+      if (password !== confirmation) { showMessage('Новые пароли не совпадают.'); return; }
+      if (password === currentPassword) { showMessage('Новый пароль должен отличаться от текущего.'); return; }
+
+      const submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      submit.textContent = 'Проверяем…';
+      try {
+        const { error: signInError } = await client.auth.signInWithPassword({ email: cloud.user.email, password: currentPassword });
+        if (signInError) throw new Error('Текущий пароль не подошёл. Проверьте его и попробуйте снова.');
+        const { error } = await client.auth.updateUser({ password });
+        if (error) throw new Error(error.message || 'Не удалось изменить пароль.');
+        form.reset();
+        dialog.close();
+        showMessage('Пароль изменён. Используйте новый пароль при следующем входе.');
+      } catch (error) {
+        showMessage(error.message || 'Не удалось изменить пароль.');
+      } finally {
+        submit.disabled = false;
+        submit.textContent = 'Сменить пароль';
+      }
+    };
+    dialog.showModal();
+    form.querySelector('#current-account-password')?.focus();
+  }
+
   async function handlePasswordUpdate(event) {
     event.preventDefault();
     const form = event.target;
@@ -742,7 +779,24 @@
     });
   }
 
+  function addChangePasswordButton() {
+    if (!cloud.user || app.querySelector('[data-cloud-action="change-password"]')) return;
+    const signOutButton = app.querySelector('[data-cloud-action="sign-out"]');
+    if (!signOutButton) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'button secondary small';
+    button.dataset.cloudAction = 'change-password';
+    button.textContent = 'Сменить пароль';
+    signOutButton.before(button);
+  }
+
+  const accountActionObserver = new MutationObserver(addChangePasswordButton);
+  accountActionObserver.observe(app, { childList: true, subtree: true });
+
   app.addEventListener('click', async (event) => {
+    const changePassword = event.target.closest('[data-cloud-action="change-password"]');
+    if (changePassword) { event.preventDefault(); showChangePasswordDialog(); return; }
     const signOut = event.target.closest('[data-cloud-action="sign-out"]');
     if (signOut) {
       if (cloud.channel) await client.removeChannel(cloud.channel);
