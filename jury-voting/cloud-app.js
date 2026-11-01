@@ -91,9 +91,20 @@
     button.disabled = true;
     const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: authRedirectUrl() });
     button.disabled = false;
-    message.textContent = error
-      ? 'Не удалось отправить письмо. Проверьте адрес и попробуйте ещё раз.'
-      : 'Если аккаунт зарегистрирован, на эту почту отправлено письмо со ссылкой для смены пароля. Проверьте папку «Спам».';
+    if (!error) {
+      message.textContent = 'Если аккаунт зарегистрирован, на эту почту отправлено письмо со ссылкой для смены пароля. Проверьте папку «Спам».';
+      return;
+    }
+    const errorText = error.message.toLowerCase();
+    if (errorText.includes('not authorized') || errorText.includes('email address not authorized')) {
+      message.textContent = 'Пробная почта Supabase отправляет письма только адресам команды проекта. Чтобы отправлять их всем пользователям, настройте SMTP в Supabase → Authentication → SMTP.';
+    } else if (errorText.includes('rate limit') || errorText.includes('too many requests')) {
+      message.textContent = 'Превышен лимит пробной отправки Supabase. Попробуйте позже или настройте свой SMTP в Authentication → SMTP.';
+    } else if (errorText.includes('redirect') || errorText.includes('url')) {
+      message.textContent = 'Supabase отклонил адрес возврата. Проверьте Authentication → URL Configuration.';
+    } else {
+      message.textContent = `Supabase не отправил письмо: ${error.message}`;
+    }
   }
 
   async function handlePasswordUpdate(event) {
