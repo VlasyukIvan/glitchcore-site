@@ -170,7 +170,7 @@ tbody tr:hover { background: #17211a; }
 .panel-body { padding: 19px 21px; }
 .list-row { border-color: #263129; }
 .list-row:hover { background: #151e18; }
-.list-sub, .form-hint { color: #000000; }
+.list-sub, .form-hint { color: #aebbb0; }
 .badge { border-radius: 7px; background: #1d3020; color: #c9f59a; }
 .badge.pending { background: #302719; color: #e7c47d; }
 .category-color { border-radius: 3px; }
