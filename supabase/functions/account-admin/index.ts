@@ -34,19 +34,19 @@ Deno.serve(async (request) => {
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
   const { data: role, error: roleError } = await admin.from('platform_admins').select('user_id').eq('user_id', actor.id).maybeSingle();
   if (roleError) return json({ error: 'Unable to verify administrator role' }, 500);
-  let input: { action?: string; user_id?: string; reason?: string };
+  let input: { action?: string; user_id?: string; reason?: string; password?: string };
   try { input = await request.json(); } catch { return json({ error: 'Invalid request body' }, 400); }
   const action = input.action;
   if (action === 'is_admin') return json({ is_admin: Boolean(role) });
   if (!role) return json({ error: 'Platform administrator access required' }, 403);
   const userId = input.user_id;
-  if (!['list', 'block', 'unblock', 'preview_delete', 'delete'].includes(action || '')) return json({ error: 'Unknown action' }, 400);
+  if (!['list', 'block', 'unblock', 'preview_delete', 'delete', 'set_password'].includes(action || '')) return json({ error: 'Unknown action' }, 400);
   if (action !== 'list' && !userId) return json({ error: 'user_id is required' }, 400);
-  if (userId === actor.id && ['block', 'delete'].includes(action || '')) return json({ error: 'You cannot block or delete your own account' }, 400);
-  if (userId && ['block', 'delete'].includes(action || '')) {
+  if (userId === actor.id && ['block', 'delete', 'set_password'].includes(action || '')) return json({ error: 'You cannot block, delete, or reset your own account here' }, 400);
+  if (userId && ['block', 'delete', 'set_password'].includes(action || '')) {
     const { data: targetAdmin, error: targetAdminError } = await admin.from('platform_admins').select('user_id').eq('user_id', userId).maybeSingle();
     if (targetAdminError) return json({ error: 'Unable to verify target account role' }, 500);
-    if (targetAdmin) return json({ error: 'Platform administrator accounts cannot be blocked or deleted here' }, 400);
+    if (targetAdmin) return json({ error: 'Platform administrator accounts cannot be changed here' }, 400);
   }
 
   const accountInfo = async (id: string) => {
@@ -109,6 +109,15 @@ Deno.serve(async (request) => {
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
       if (error) throw new Error('Unable to update account access');
+      return json({ ok: true });
+    }
+    if (action === 'set_password') {
+      const password = input.password;
+      if (typeof password !== 'string' || password.length < 12 || password.length > 128) {
+        return json({ error: 'Temporary password must be between 12 and 128 characters' }, 400);
+      }
+      const { error } = await admin.auth.admin.updateUserById(userId!, { password });
+      if (error) throw new Error('Unable to set temporary password');
       return json({ ok: true });
     }
     if (action === 'delete') {

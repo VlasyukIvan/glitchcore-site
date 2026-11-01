@@ -187,6 +187,35 @@
     return result;
   }
 
+  function showTemporaryPasswordDialog(user) {
+    const dialog = document.querySelector('#dialog');
+    const form = document.querySelector('#dialog-form');
+    document.querySelector('#dialog-title').textContent = `Новый временный пароль · ${user.email || 'аккаунт'}`;
+    form.innerHTML = `<p class="contest-confirm">Текущий пароль посмотреть нельзя. Новый временный пароль передайте пользователю лично по доверенному каналу. После входа попросите его сменить пароль.</p><div class="form-grid"><div class="field full"><label for="admin-temporary-password">Временный пароль, от 12 символов</label><input id="admin-temporary-password" name="password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required></div><div class="field full"><label for="admin-temporary-password-confirm">Повторите пароль</label><input id="admin-temporary-password-confirm" name="password_confirmation" type="password" minlength="12" maxlength="128" autocomplete="new-password" required></div></div><div class="dialog-actions"><button class="button secondary" type="button" data-close>Отмена</button><button class="button danger" type="submit">Установить пароль</button></div>`;
+    form.onsubmit = async (event) => {
+      event.preventDefault();
+      const password = new FormData(form).get('password');
+      const confirmation = new FormData(form).get('password_confirmation');
+      if (password.length < 12 || password.length > 128) { showMessage('Пароль должен содержать от 12 до 128 символов.'); return; }
+      if (password !== confirmation) { showMessage('Введённые пароли не совпадают.'); return; }
+      if (!confirm(`Назначить новый пароль для ${user.email || 'этого аккаунта'}? Старый пароль перестанет работать.`)) return;
+      const submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      try {
+        await callPlatformAdmin('set_password', { user_id: user.id, password });
+        form.reset();
+        dialog.close();
+        showMessage('Временный пароль установлен. Передайте его пользователю лично; не отправляйте в общий чат.');
+      } catch (error) {
+        showMessage(error.message || 'Не удалось установить пароль.');
+      } finally {
+        submit.disabled = false;
+      }
+    };
+    dialog.showModal();
+    form.querySelector('#admin-temporary-password')?.focus();
+  }
+
   async function loadPlatformAdmin(message = '') {
     cloud.mode = 'platform-admin-loading';
     app.innerHTML = '<main class="judge-shell"><p>Загрузка панели администратора…</p></main>';
@@ -194,6 +223,18 @@
       const { users } = await callPlatformAdmin('list');
       cloud.mode = 'platform-admin';
       app.innerHTML = `<main class="judge-shell" style="max-width:1100px"><header class="judge-top"><div class="judge-logo"><span class="brand-mark">Ж</span><span>Голосование жюри</span></div><div style="display:flex;gap:8px"><a class="button secondary small" href="${escapeHtml(location.pathname)}">К конкурсам</a><button class="button secondary small" type="button" data-cloud-action="sign-out">Выйти</button></div></header><section class="judge-heading"><p class="eyebrow">Платформенное управление</p><h1>Аккаунты</h1><p>При блокировке пользователь сразу теряет доступ к организациям и конкурсам; данные остаются сохранены. Время и причина блокировки видны здесь и самому пользователю.</p></section>${message ? `<p class="form-hint" role="status">${escapeHtml(message)}</p>` : ''}<section class="panel"><div class="panel-body"><div class="table-wrap"><table><thead><tr><th>Пользователь</th><th>Дата регистрации</th><th>Организации</th><th>Конкурсы</th><th>Статус и сведения</th><th>Действия</th></tr></thead><tbody>${users.map((user) => `<tr><td>${escapeHtml(user.email || 'Без email')}</td><td>${user.created_at ? new Date(user.created_at).toLocaleDateString('ru-RU') : '—'}</td><td>${user.organization_count}</td><td>${user.competition_count}</td><td><span class="badge ${user.status === 'blocked' ? 'pending' : ''}">${user.status === 'blocked' ? 'Заблокирован' : 'Активен'}</span>${user.status === 'blocked' ? `<div class="form-hint">С: ${escapeHtml(formatDateTime(user.updated_at))}<br>Причина: ${escapeHtml(user.reason || 'не указана')}</div>` : ''}</td><td><div class="row-actions">${user.id === cloud.user.id ? '<span class="form-hint">Вы</span>' : `<button class="button secondary small" data-admin-action="${user.status === 'blocked' ? 'unblock' : 'block'}" data-user-id="${user.id}">${user.status === 'blocked' ? 'Разблокировать' : 'Заблокировать'}</button><button class="button danger small" data-admin-action="delete" data-user-id="${user.id}">Удалить</button>`}</div></td></tr>`).join('') || '<tr><td colspan="6" class="empty">Аккаунтов пока нет</td></tr>'}</tbody></table></div></div></section></main>`;
+      users.forEach((user) => {
+        if (user.id === cloud.user.id) return;
+        const row = [...app.querySelectorAll('tbody tr')].find((item) => item.querySelector('td')?.textContent.trim() === (user.email || 'Без email'));
+        const actions = row?.querySelector('.row-actions');
+        if (!actions || actions.querySelector('[data-admin-action="set-password"]')) return;
+        const button = document.createElement('button');
+        button.className = 'button secondary small';
+        button.dataset.adminAction = 'set-password';
+        button.dataset.userId = user.id;
+        button.textContent = 'Задать временный пароль';
+        actions.insertBefore(button, actions.lastElementChild);
+      });
     } catch (error) {
       if (/administrator|admin access|not authorized/i.test(error.message)) {
         cloud.mode = 'platform-admin-denied';
@@ -233,6 +274,10 @@
       } else if (button.dataset.adminAction === 'unblock') {
         if (!confirm('Восстановить доступ этому аккаунту?')) return;
         await callPlatformAdmin('unblock', { user_id: id });
+      } else if (button.dataset.adminAction === 'set-password') {
+        const preview = await callPlatformAdmin('preview_delete', { user_id: id });
+        showTemporaryPasswordDialog({ id, email: preview.email });
+        return;
       } else {
         const preview = await callPlatformAdmin('preview_delete', { user_id: id });
         if (!confirm(`Удалить аккаунт ${preview.email || ''}? Будут удалены ${preview.organization_count} организаций, ${preview.competition_count} конкурсов и связанные данные. Это действие нельзя отменить.`)) return;
