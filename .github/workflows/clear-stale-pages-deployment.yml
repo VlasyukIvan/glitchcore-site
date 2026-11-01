@@ -1,0 +1,64 @@
+name: Clear stale GitHub Pages deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_id:
+        description: Stuck GitHub Pages deployment ID
+        required: true
+        default: '7470332473'
+      expected_sha:
+        description: Commit SHA shown in the Pages deploy error
+        required: true
+        default: 'd75e77db9a997655fbb90b6cfa2b6e8c5a313a3f'
+
+permissions:
+  deployments: write
+
+jobs:
+  deactivate-stale-deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify and deactivate stale deployment
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const deploymentId = Number(context.payload.inputs.deployment_id);
+            const expectedSha = context.payload.inputs.expected_sha;
+
+            if (!Number.isSafeInteger(deploymentId)) {
+              throw new Error('Deployment ID must be an integer.');
+            }
+
+            const { data: deployment } = await github.rest.repos.getDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deploymentId,
+            });
+
+            if (deployment.environment !== 'github-pages' || deployment.sha !== expectedSha) {
+              throw new Error('Deployment ID, environment, or commit SHA did not match. No changes were made.');
+            }
+
+            const { data: statuses } = await github.rest.repos.listDeploymentStatuses({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deploymentId,
+              per_page: 100,
+            });
+
+            if (!statuses.some((status) => status.state === 'in_progress')) {
+              throw new Error('This deployment has no in-progress status. No changes were made.');
+            }
+
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deploymentId,
+              state: 'inactive',
+              description: 'Clearing stale GitHub Pages deployment after a completed workflow.',
+              environment: 'github-pages',
+              auto_inactive: false,
+            });
+
+            core.info(`Marked stale Pages deployment ${deploymentId} (${expectedSha}) inactive.`);
