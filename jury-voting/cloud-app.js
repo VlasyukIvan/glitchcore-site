@@ -74,7 +74,7 @@
 
   function authView(message = '') {
     cloud.mode = 'auth';
-    app.innerHTML = `<main class="judge-shell"><header class="judge-top"><div class="judge-logo"><span class="brand-mark">Ж</span><span>Голосование жюри</span></div><small>ОБЛАЧНАЯ ВЕРСИЯ</small></header><section class="judge-heading"><p class="eyebrow">Рабочее пространство</p><h1>Вход организатора</h1><p>Войдите или создайте аккаунт, чтобы управлять конкурсами.</p></section><section class="panel" style="max-width:480px"><div class="panel-body"><form id="cloud-auth-form" class="form-grid"><div class="field full"><label for="cloud-email">Электронная почта</label><input id="cloud-email" name="email" type="email" autocomplete="email" required></div><div class="field full"><label for="cloud-password">Пароль</label><input id="cloud-password" name="password" type="password" autocomplete="current-password" minlength="8" required></div><div class="field full"><p class="form-hint" id="cloud-auth-message">${escapeHtml(message)}</p></div><div class="field full" style="display:flex;gap:8px;flex-wrap:wrap"><button class="button" type="submit" data-auth-mode="sign-in">Войти</button><button class="button secondary" type="submit" data-auth-mode="sign-up">Создать аккаунт</button></div><div class="field full"><button class="auth-link" type="button" data-auth-action="forgot-password">Забыли пароль?</button></div><div class="field full" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line)"><p class="form-hint">Нужна помощь? Напишите в Telegram:<br><a href="https://t.me/GlitchCore9" target="_blank" rel="noopener noreferrer">@GlitchCore9</a></p></div></form></div></section></main>`;
+    app.innerHTML = `<main class="judge-shell"><header class="judge-top"><div class="judge-logo"><span class="brand-mark">Ж</span><span>Голосование жюри</span></div><small>ОБЛАЧНАЯ ВЕРСИЯ</small></header><section class="judge-heading"><p class="eyebrow">Рабочее пространство</p><h1>Вход организатора</h1><p>Войдите или создайте аккаунт, чтобы управлять конкурсами.</p></section><section class="panel" style="max-width:480px"><div class="panel-body"><form id="cloud-auth-form" class="form-grid"><div class="field full"><label for="cloud-email">Электронная почта</label><input id="cloud-email" name="email" type="email" autocomplete="email" required></div><div class="field full"><label for="cloud-password">Пароль</label><input id="cloud-password" name="password" type="password" autocomplete="current-password" minlength="8" required></div><div class="field full"><p class="form-hint" id="cloud-auth-message">${escapeHtml(message)}</p></div><div class="field full" style="display:flex;gap:8px;flex-wrap:wrap"><button class="button" type="submit" data-auth-mode="sign-in">Войти</button><button class="button secondary" type="submit" data-auth-mode="sign-up">Создать аккаунт</button></div><div class="field full"><button class="auth-link" type="button" data-auth-action="forgot-password">Нужна помощь со входом?</button></div><div class="field full" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line)"><p class="form-hint">Нужна помощь? Напишите в Telegram:<br><a href="https://t.me/GlitchCore9" target="_blank" rel="noopener noreferrer">@GlitchCore9</a></p></div></form></div></section></main>`;
   }
 
   function passwordUpdateView(message = '') {
@@ -82,29 +82,15 @@
     app.innerHTML = `<main class="judge-shell"><header class="judge-top"><div class="judge-logo"><span class="brand-mark">Ж</span><span>Голосование жюри</span></div></header><section class="judge-heading"><p class="eyebrow">Восстановление доступа</p><h1>Задайте новый пароль</h1><p>После сохранения войдите с новым паролем. Если аккаунт ещё не активирован, сначала потребуется разрешение администратора.</p></section><section class="panel" style="max-width:480px"><div class="panel-body"><form id="password-update-form" class="form-grid"><div class="field full"><label for="new-password">Новый пароль</label><input id="new-password" name="password" type="password" autocomplete="new-password" minlength="8" required></div><div class="field full"><label for="repeat-password">Повторите пароль</label><input id="repeat-password" name="password_confirmation" type="password" autocomplete="new-password" minlength="8" required></div><div class="field full"><p class="form-hint" id="password-update-message" role="status">${escapeHtml(message)}</p></div><div class="field full"><button class="button" type="submit">Сохранить новый пароль</button></div></form></div></section></main>`;
   }
 
-  async function requestPasswordReset(button) {
-    const form = document.querySelector('#cloud-auth-form');
-    const emailInput = form?.elements.email;
-    const message = form?.querySelector('#cloud-auth-message');
-    const email = emailInput?.value.trim();
-    if (!email) { message.textContent = 'Сначала введите адрес электронной почты.'; emailInput?.focus(); return; }
-    button.disabled = true;
-    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: authRedirectUrl() });
-    button.disabled = false;
-    if (!error) {
-      message.textContent = 'Если аккаунт зарегистрирован, на эту почту отправлено письмо со ссылкой для смены пароля. Проверьте папку «Спам».';
-      return;
-    }
-    const errorText = error.message.toLowerCase();
-    if (errorText.includes('not authorized') || errorText.includes('email address not authorized')) {
-      message.textContent = 'Пробная почта Supabase отправляет письма только адресам команды проекта. Чтобы отправлять их всем пользователям, настройте SMTP в Supabase → Authentication → SMTP.';
-    } else if (errorText.includes('rate limit') || errorText.includes('too many requests')) {
-      message.textContent = 'Превышен лимит пробной отправки Supabase. Попробуйте позже или настройте свой SMTP в Authentication → SMTP.';
-    } else if (errorText.includes('redirect') || errorText.includes('url')) {
-      message.textContent = 'Supabase отклонил адрес возврата. Проверьте Authentication → URL Configuration.';
-    } else {
-      message.textContent = `Supabase не отправил письмо: ${error.message}`;
-    }
+  function showSupportOptions() {
+    const email = document.querySelector('#cloud-email')?.value.trim() || '';
+    const message = `Здравствуйте! Не могу войти в аккаунт голосования.${email ? ` Мой email для входа: ${email}.` : ''} Пароль не отправляю.`;
+    const telegramUrl = `https://t.me/GlitchCore9?text=${encodeURIComponent(message)}`;
+    const dialog = document.querySelector('#dialog');
+    document.querySelector('#dialog-title').textContent = 'Помощь со входом';
+    const form = document.querySelector('#dialog-form');
+    form.innerHTML = `<p class="contest-confirm">Напишите, с каким аккаунтом нужна помощь. Email-логин будет подставлен в сообщение, если вы его ввели. Пароль никому не отправляйте.</p><div class="dialog-actions"><a class="button" href="${escapeHtml(telegramUrl)}" target="_blank" rel="noopener noreferrer">Telegram · @GlitchCore9</a><a class="button secondary" href="https://vk.com/glitchcore9" target="_blank" rel="noopener noreferrer">ВКонтакте · GlitchCore9</a></div>`;
+    dialog.showModal();
   }
 
   async function handlePasswordUpdate(event) {
@@ -813,7 +799,7 @@
     const forgotPasswordButton = event.target.closest('[data-auth-action="forgot-password"]');
     if (forgotPasswordButton) {
       event.preventDefault();
-      requestPasswordReset(forgotPasswordButton);
+      showSupportOptions();
     }
   }, true);
 
