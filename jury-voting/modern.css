@@ -317,6 +317,14 @@ tbody tr:hover { background: #17211a; }
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
 
+.judge-link-actions { max-width: 100%; flex-wrap: wrap; justify-content: flex-end; }
+.judge-link-actions .button { min-height: 36px; }
+.judge-qr-view { display: grid; justify-items: center; gap: 12px; text-align: center; }
+.judge-qr-frame { display: grid; width: min(100%, 300px); aspect-ratio: 1; place-items: center; padding: 12px; border: 1px solid var(--line); background: #fff; }
+.judge-qr-frame svg { display: block; width: 100%; height: auto; }
+.judge-qr-url { max-width: 100%; margin: 0; color: var(--muted); font: 10px/1.5 var(--mono); overflow-wrap: anywhere; }
+@media (max-width: 800px) { .judge-link-actions { justify-content: flex-start; } }
+
 :root {
   color-scheme: light;
   --paper: #f7eee8;

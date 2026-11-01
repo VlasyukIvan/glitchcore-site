@@ -27,7 +27,7 @@
     .mobile-nav a{display:grid;min-height:48px;place-content:center;gap:2px;color:#68756c;text-align:center;text-decoration:none;font-size:9px}
     .mobile-nav a span:first-child{font-size:17px}
   </style>
-  <link rel="stylesheet" href="modern.css?v=20261101-3">
+  <link rel="stylesheet" href="modern.css?v=20261101-4">
   <script src="supabase-config.js"></script>
 </head>
 <body>
@@ -139,7 +139,7 @@
       return token ? `${location.href.split('#')[0]}#judge=${encodeURIComponent(token)}` : '';
     }
     function renderJudges() {
-      return `<section class="page-head"><div><p class="eyebrow">Состав жюри</p><h1>Судьи и ссылки</h1><p>Каждая ссылка связана с отдельным бюллетенем судьи.</p></div><button class="button" type="button" data-action="add-judge">＋ Добавить судью</button></section><section class="panel"><div class="panel-head"><h2>Персональный доступ</h2><span class="badge">${votersCount()} / ${state.judges.length} отправлено</span></div><div class="panel-body list">${state.judges.map((judge, index) => { const submitted = Boolean(state.votes[judge.id]?.submitted); return `<div class="list-row"><div><div class="list-title">${esc(judge.name)}</div><div class="list-sub">Ссылка ${String(index + 1).padStart(2, '0')} · ${submitted ? 'бюллетень отправлен' : 'ожидает голосования'}</div></div><div class="row-actions"><span class="badge ${submitted ? '' : 'pending'}">${submitted ? 'Готово' : 'Ожидает'}</span><button class="button secondary small" type="button" data-action="copy-link" data-id="${esc(judge.id)}">Копировать ссылку</button><button class="button danger small" type="button" data-action="delete-judge" data-id="${esc(judge.id)}" aria-label="Удалить ${esc(judge.name)}">×</button></div><div class="link-box">${makeJudgeUrl(judge.id) ? esc(makeJudgeUrl(judge.id)) : 'Ссылка не создана'}</div></div>`; }).join('') || `<div class="empty">Добавьте судей, чтобы подготовить ссылки.</div>`}</div></section>`;
+      return `<section class="page-head"><div><p class="eyebrow">Состав жюри</p><h1>Судьи и ссылки</h1><p>Для каждого судьи можно скопировать ссылку, отправить её через меню телефона или показать QR-код.</p></div><button class="button" type="button" data-action="add-judge">＋ Добавить судью</button></section><section class="panel"><div class="panel-head"><h2>Персональный доступ</h2><span class="badge">${votersCount()} / ${state.judges.length} отправлено</span></div><div class="panel-body list">${state.judges.map((judge, index) => { const submitted = Boolean(state.votes[judge.id]?.submitted); const judgeUrl = makeJudgeUrl(judge.id); const sharingActions = judgeUrl ? `<button class="button secondary small" type="button" data-action="share-link" data-id="${esc(judge.id)}">Поделиться</button><button class="button secondary small" type="button" data-action="show-qr" data-id="${esc(judge.id)}">QR-код</button>` : ''; return `<div class="list-row"><div><div class="list-title">${esc(judge.name)}</div><div class="list-sub">Ссылка ${String(index + 1).padStart(2, '0')} · ${submitted ? 'бюллетень отправлен' : 'ожидает голосования'}</div></div><div class="row-actions judge-link-actions"><span class="badge ${submitted ? '' : 'pending'}">${submitted ? 'Готово' : 'Ожидает'}</span>${sharingActions}<button class="button secondary small" type="button" data-action="copy-link" data-id="${esc(judge.id)}" ${judgeUrl ? '' : 'disabled'}>Копировать</button><button class="button danger small" type="button" data-action="delete-judge" data-id="${esc(judge.id)}" aria-label="Удалить ${esc(judge.name)}">×</button></div><div class="link-box">${judgeUrl ? esc(judgeUrl) : 'Ссылка не создана'}</div></div>`; }).join('') || `<div class="empty">Добавьте судей, чтобы подготовить ссылки.</div>`}</div></section>`;
     }
     function renderJudge(token) {
       const judge = state.judges.find(item => item.id === token);
@@ -460,6 +460,6 @@
     }, 15000);
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="cloud-app.js?v=cloud-20261101-5"></script>
+  <script src="cloud-app.js?v=cloud-20261101-6"></script>
 </body>
 </html>

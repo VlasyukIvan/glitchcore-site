@@ -779,6 +779,73 @@
     });
   }
 
+  let qrLibraryPromise;
+  function loadQrLibrary() {
+    if (typeof window.qrcode === 'function') return Promise.resolve();
+    if (qrLibraryPromise) return qrLibraryPromise;
+    qrLibraryPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js';
+      script.onload = () => typeof window.qrcode === 'function' ? resolve() : reject(new Error('QR library did not initialize'));
+      script.onerror = () => reject(new Error('Не удалось загрузить генератор QR-кода.'));
+      document.head.append(script);
+    });
+    return qrLibraryPromise;
+  }
+
+  function judgeLinkDetails(id) {
+    const judge = window.ContestApp.getState().judges.find((item) => item.id === id);
+    const row = [...app.querySelectorAll('.panel-body.list > .list-row')]
+      .find((item) => item.querySelector('[data-id]')?.dataset.id === id);
+    const url = row?.querySelector('.link-box')?.textContent.trim();
+    if (!judge || !url || !/^https?:\/\//i.test(url)) throw new Error('Ссылка ещё не создана или недоступна в этой вкладке.');
+    return { judge, url };
+  }
+
+  async function shareJudgeLink(id) {
+    try {
+      const { judge, url } = judgeLinkDetails(id);
+      const state = window.ContestApp.getState();
+      const shareData = { title: `${state.title} · ${judge.name}`, text: `Персональная ссылка для голосования судьи «${judge.name}»`, url };
+      if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
+        await navigator.share(shareData);
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(`${shareData.text}\n${url}`);
+        showMessage('Ссылка и текст скопированы. Отправьте их судье.');
+      } else {
+        showMessage('Скопируйте персональную ссылку из строки судьи.');
+      }
+    } catch (error) {
+      if (error.name !== 'AbortError') showMessage(error.message || 'Не удалось поделиться ссылкой.');
+    }
+  }
+
+  async function showJudgeQr(id) {
+    let details;
+    try { details = judgeLinkDetails(id); }
+    catch (error) { showMessage(error.message); return; }
+    const dialog = document.querySelector('#dialog');
+    const form = document.querySelector('#dialog-form');
+    document.querySelector('#dialog-title').textContent = `QR-ссылка · ${details.judge.name}`;
+    form.innerHTML = `<div class="judge-qr-view"><div class="judge-qr-frame" id="judge-qr-frame" role="img" aria-label="QR-код судейской ссылки"></div><p class="form-hint">Откройте камеру телефона и наведите её на код.</p><p class="judge-qr-url">${escapeHtml(details.url)}</p></div><div class="dialog-actions"><button class="button secondary" type="button" data-close>Закрыть</button><button class="button" type="button" data-copy-qr-link>Копировать ссылку</button></div>`;
+    dialog.showModal();
+    form.querySelector('[data-copy-qr-link]').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(details.url); showMessage('Судейская ссылка скопирована.'); }
+      catch { showMessage('Не удалось скопировать ссылку.'); }
+    });
+    try {
+      await loadQrLibrary();
+      const qrCode = window.qrcode(0, 'M');
+      qrCode.addData(details.url);
+      qrCode.make();
+      const frame = form.querySelector('#judge-qr-frame');
+      if (frame) frame.innerHTML = qrCode.createSvgTag(6, 4, 'QR-код судейской ссылки', 'Судейская ссылка');
+    } catch (error) {
+      const frame = form.querySelector('#judge-qr-frame');
+      if (frame) frame.textContent = 'Не удалось создать QR-код. Скопируйте ссылку ниже.';
+    }
+  }
+
   function addChangePasswordButton() {
     if (!cloud.user || app.querySelector('[data-cloud-action="change-password"]')) return;
     const signOutButton = app.querySelector('[data-cloud-action="sign-out"]');
@@ -797,6 +864,10 @@
   app.addEventListener('click', async (event) => {
     const changePassword = event.target.closest('[data-cloud-action="change-password"]');
     if (changePassword) { event.preventDefault(); showChangePasswordDialog(); return; }
+    const shareLink = event.target.closest('[data-action="share-link"]');
+    if (shareLink) { event.preventDefault(); event.stopImmediatePropagation(); await shareJudgeLink(shareLink.dataset.id); return; }
+    const showQr = event.target.closest('[data-action="show-qr"]');
+    if (showQr) { event.preventDefault(); event.stopImmediatePropagation(); await showJudgeQr(showQr.dataset.id); return; }
     const signOut = event.target.closest('[data-cloud-action="sign-out"]');
     if (signOut) {
       if (cloud.channel) await client.removeChannel(cloud.channel);
